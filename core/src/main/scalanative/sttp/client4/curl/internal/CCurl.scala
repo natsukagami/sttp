@@ -1,6 +1,7 @@
 package sttp.client4.curl.internal
 
 import sttp.client4.curl.internal.CurlCode.CurlCode
+import sttp.client4.curl.internal.CurlMCode.CurlMCode
 
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -10,6 +11,21 @@ private[curl] trait Curl {}
 private[curl] trait Mime {}
 
 private[curl] trait MimePart {}
+
+private[curl] trait CurlMulti {}
+
+private[curl] trait CurlWaitFd {} // could be useful, but not for now
+
+// https://curl.se/libcurl/c/curl_multi_info_read.html
+// struct CURLMsg {
+//   CURLMSG msg;       /* what this message means */
+//   CURL *easy_handle; /* the handle it concerns */
+//   union {
+//     void *whatever;    /* message-specific data */
+//     CURLcode result;   /* return code for transfer */
+//   } data;
+// };
+private[curl] type CurlMsg = CStruct3[CInt /*msg*/, Ptr[Curl] /*easy handle*/, CInt /*data*/ ]
 
 private[curl] object libcurlPlatformCompat {
   @extern @link("libcurl") @link("crypt32")
@@ -81,4 +97,34 @@ private[curl] trait CCurl {
 
   @name("curl_slist_free_all")
   def slistFree(list: Ptr[CurlSlist]): Unit = extern
+
+  @name("curl_multi_init")
+  def multiInit: Ptr[CurlMulti] = extern
+
+  @name("curl_multi_cleanup")
+  def multiCleanup(handle: Ptr[CurlMulti]): Unit = extern
+
+  @name("curl_multi_wakeup")
+  def multiWakeup(handle: Ptr[CurlMulti]): CInt = extern
+
+  @name("curl_multi_add_handle")
+  def multiAddHandle(handle: Ptr[CurlMulti], easy: Ptr[Curl]): CInt = extern
+
+  @name("curl_multi_remove_handle")
+  def multiRemoveHandle(handle: Ptr[CurlMulti], easy: Ptr[Curl]): CInt = extern
+
+  @name("curl_multi_perform")
+  def multiPerform(handle: Ptr[CurlMulti], runningHandles: Ptr[CInt]): CInt = extern
+
+  @name("curl_multi_poll")
+  def multiPoll(
+      handle: Ptr[CurlMulti],
+      extraFds: Ptr[CurlWaitFd],
+      numExtraFds: CUnsignedInt,
+      timeout: CInt,
+      numFds: Ptr[CInt]
+  ): CInt = extern
+
+  @name("curl_multi_info_read")
+  def multiInfoRead(handle: Ptr[CurlMulti], msgsInQueue: Ptr[CInt]): Ptr[CurlMsg] = extern
 }
