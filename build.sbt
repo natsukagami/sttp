@@ -38,7 +38,7 @@ val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
       files1 ++ Seq(file("generated-docs/out"))
     }
   }.value,
-  ideSkipProject := (scalaVersion.value != scala3)
+  ideSkipProject := (!scala3.contains(scalaVersion.value))
     || !thisProjectRef.value.project.contains("Native"),
   bspEnabled := !ideSkipProject.value,
   mimaPreviousArtifacts := Set.empty // we only use MiMa for `core` for now, using enableMimaSettings
@@ -77,7 +77,6 @@ val commonJsBackendSettings = JSDependenciesPlugin.projectSettings ++ List(
 )
 
 val commonNativeSettings = commonSettings ++ Seq(
-  nativeLinkStubs := true,
   Test / test := {
     // TODO: re-enable after scala-native release > 0.4.0-M2
     if (sys.env.isDefinedAt("RELEASE_VERSION")) {
@@ -156,8 +155,8 @@ val zio2Version = "2.0.19"
 val zio1InteropRsVersion = "1.3.12"
 val zio2InteropRsVersion = "2.0.2"
 
-val sttpModelVersion = "1.7.6"
-val sttpSharedVersion = "1.3.17"
+val sttpModelVersion = "1.7.6+0-1b16a357+20231127-2230-SNAPSHOT"
+val sttpSharedVersion = "1.3.17+1-4bc4f076+20231127-2240-SNAPSHOT"
 
 val logback = "ch.qos.logback" % "logback-classic" % "1.4.13"
 
@@ -300,8 +299,8 @@ lazy val core = (projectMatrix in file("core"))
       "com.softwaremill.sttp.model" %%% "core" % sttpModelVersion,
       "com.softwaremill.sttp.shared" %%% "core" % sttpSharedVersion,
       "com.softwaremill.sttp.shared" %%% "ws" % sttpSharedVersion
-    ),
-    scalaTest
+    )
+    // scalaTest
   )
   .settings(testServerSettings)
   .jvmPlatform(
@@ -321,6 +320,7 @@ lazy val core = (projectMatrix in file("core"))
   .nativePlatform(
     scalaVersions = scala2 ++ scala3,
     settings = commonNativeSettings ++ versioningSchemeSettings ++ List(
+      libraryDependencies += "ch.epfl.lamp" %%% "gears" % "0.1.0-SNAPSHOT",
       Test / publishArtifact := true
     )
   )
